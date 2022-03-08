@@ -25,8 +25,12 @@ Quickly move i3 workspaces to a specified output.
 Flags:
   * `--all`
   * `--except <workspaces>`
+  * `-n`
 
-Where `workspaces` is a comma-separated list of workspace numbers.
+Where `<workspaces>` is a comma-separated list of workspace numbers.
+
+Use the dry-run flag `-n` to only print which workspaces will be moved without
+actually moving them.
 
 ### Examples
 
