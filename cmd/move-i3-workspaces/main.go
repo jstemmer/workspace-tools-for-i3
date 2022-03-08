@@ -35,7 +35,7 @@ type Options struct {
 }
 
 func main() {
-	dryrun := flag.Bool("n", true, "dry run; don't move anything, just print what would be moved")
+	dryrun := flag.Bool("n", false, "dry run; don't move anything, just print what would be moved")
 	allWorkspaces := flag.Bool("all", false, "select all workspaces")
 	exceptWorkspaces := flag.String("except", "", "exclude workspaces, for use in combination with --all")
 	flag.Parse()
