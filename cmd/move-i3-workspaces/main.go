@@ -65,7 +65,9 @@ func main() {
 		output:     output,
 	}
 	if err := options.Validate(); err != nil {
-		exitf("error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		flag.Usage()
+		os.Exit(1)
 	}
 	if err := moveWorkspaces(options); err != nil {
 		exitf("error: %v\n", err)
