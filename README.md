@@ -46,6 +46,22 @@ Move workspace `2`, `4` and `6` to output `DP1`:
 move-i3-workspaces 2,4,6 DP1
 ```
 
+## `new-i3-workspace`
+
+Change to a new i3 workspace using the next available free number. Useful when
+you quickly want a new empty workspace but don't want to check which number is
+available.
+
+### Usage
+
+`new-i3-workspace [flags]`
+
+Flags:
+  * `max <number>` The maximum workspace number to consider (default 20).
+  * `name <name>` Optional name to give to the new workspace.
+  * `reserved <workspaces>` Comma-separated list of workspace numbers that
+    should not be used. 
+
 ## License
 
 Apache 2.0; see [`LICENSE`](LICENSE) for details.
