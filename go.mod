@@ -1,4 +1,4 @@
-module workspace-tools-for-i3
+module github.com/jstemmer/workspace-tools-for-i3
 
 go 1.17
 
