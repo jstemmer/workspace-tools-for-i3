@@ -20,23 +20,20 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/jstemmer/workspace-tools-for-i3/internal/i3ws"
 
 	"go.i3wm.org/i3/v4"
 )
 
 func main() {
 	max := flag.Int("max", 20, "maximum workspace `number` to consider")
-	reservedWorkspaces := flag.String("reserved", "", "list of reserved workspace numbers")
+	reserved := i3ws.NewWorkspacesFlag()
+	flag.Var(&reserved, "reserved", "list of reserved workspace numbers")
 	name := flag.String("name", "", "name to use for new workspace")
 	flag.Parse()
-
-	reserved, err := parseWorkspaces(*reservedWorkspaces)
-	if err != nil {
-		exitf("invalid value for --reserved: %v\n", err)
-	}
 
 	num, err := nextAvailableWorkspace(reserved, *max)
 	if err != nil {
@@ -92,29 +89,6 @@ func changeWorkspace(number int, name string) error {
 	cmd := fmt.Sprintf(`workspace number "%s"`, n)
 	_, err := i3.RunCommand(cmd)
 	return err
-}
-
-func parseWorkspaces(in string) ([]int, error) {
-	if in == "" {
-		return nil, nil
-	}
-
-	workspaces := make(map[int]struct{})
-	for _, field := range strings.Split(in, ",") {
-		n, err := strconv.Atoi(field)
-		if err != nil {
-			return nil, fmt.Errorf("invalid workspace number: %w", err)
-		}
-		workspaces[n] = struct{}{}
-	}
-	var ws []int
-	for n := range workspaces {
-		ws = append(ws, n)
-	}
-	sort.Slice(ws, func(i, j int) bool {
-		return ws[i] < ws[j]
-	})
-	return ws, nil
 }
 
 // parseWorkspaceName returns the number prefix of a workspace name.
