@@ -19,9 +19,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"sort"
-	"strconv"
-	"strings"
+
+	"github.com/jstemmer/workspace-tools-for-i3/internal/i3ws"
 
 	"go.i3wm.org/i3/v4"
 )
@@ -37,13 +36,9 @@ type Options struct {
 func main() {
 	dryrun := flag.Bool("n", false, "dry run; don't move anything, just print what would be moved")
 	allWorkspaces := flag.Bool("all", false, "select all workspaces")
-	exceptWorkspaces := flag.String("except", "", "exclude workspaces, for use in combination with --all")
+	except := i3ws.NewWorkspacesFlag()
+	flag.Var(&except, "except", "exclude `workspaces`, for use in combination with --all")
 	flag.Parse()
-
-	except, err := parseWorkspaces(*exceptWorkspaces)
-	if err != nil {
-		exitf("invalid value for --except: %v\n", err)
-	}
 
 	var chosenWorkspaces string
 	if flag.NArg() > 1 {
@@ -52,15 +47,15 @@ func main() {
 
 	output := flag.Arg(flag.NArg() - 1)
 
-	workspaces, err := parseWorkspaces(chosenWorkspaces)
-	if err != nil {
-		exitf("invalid value for --workspaces: %v\n", err)
+	workspaces := i3ws.NewWorkspacesFlag()
+	if err := workspaces.Set(chosenWorkspaces); err != nil {
+		exitf("invalid list of workspaces: %v\n", err)
 	}
 
 	options := Options{
 		dryrun:     *dryrun,
 		all:        *allWorkspaces,
-		except:     except,
+		except:     []int(except),
 		workspaces: workspaces,
 		output:     output,
 	}
@@ -149,29 +144,6 @@ func moveWorkspace(num int, output string) error {
 	cmd := fmt.Sprintf("[workspace=%d] move workspace to output %s", num, output)
 	_, err := i3.RunCommand(cmd)
 	return err
-}
-
-func parseWorkspaces(in string) ([]int, error) {
-	if in == "" {
-		return nil, nil
-	}
-
-	workspaces := make(map[int]struct{})
-	for _, field := range strings.Split(in, ",") {
-		n, err := strconv.Atoi(field)
-		if err != nil {
-			return nil, fmt.Errorf("invalid workspace number: %w", err)
-		}
-		workspaces[n] = struct{}{}
-	}
-	var ws []int
-	for n := range workspaces {
-		ws = append(ws, n)
-	}
-	sort.Slice(ws, func(i, j int) bool {
-		return ws[i] < ws[j]
-	})
-	return ws, nil
 }
 
 func exitf(msg string, args ...interface{}) {
