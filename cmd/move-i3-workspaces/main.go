@@ -29,8 +29,8 @@ import (
 type Options struct {
 	dryrun     bool
 	all        bool
-	except     []int64
-	workspaces []int64
+	except     []int
+	workspaces []int
 	output     string
 }
 
@@ -108,7 +108,7 @@ func moveWorkspaces(options Options) error {
 
 	workspaces := options.workspaces
 	if options.all {
-		except := make(map[int64]bool)
+		except := make(map[int]bool)
 		for _, e := range options.except {
 			except[e] = true
 		}
@@ -122,10 +122,11 @@ func moveWorkspaces(options Options) error {
 			if w.Output == options.output {
 				continue // skip workspaces that are already on the right output
 			}
-			if _, ok := except[w.Num]; ok {
+			num := int(w.Num)
+			if _, ok := except[num]; ok {
 				continue // skip workspaces in the exception list
 			}
-			workspaces = append(workspaces, w.Num)
+			workspaces = append(workspaces, num)
 		}
 	}
 
@@ -144,26 +145,26 @@ func moveWorkspaces(options Options) error {
 	return nil
 }
 
-func moveWorkspace(num int64, output string) error {
+func moveWorkspace(num int, output string) error {
 	cmd := fmt.Sprintf("[workspace=%d] move workspace to output %s", num, output)
 	_, err := i3.RunCommand(cmd)
 	return err
 }
 
-func parseWorkspaces(in string) ([]int64, error) {
+func parseWorkspaces(in string) ([]int, error) {
 	if in == "" {
 		return nil, nil
 	}
 
-	workspaces := make(map[int64]struct{})
+	workspaces := make(map[int]struct{})
 	for _, field := range strings.Split(in, ",") {
-		n, err := strconv.ParseInt(field, 10, 64)
+		n, err := strconv.Atoi(field)
 		if err != nil {
 			return nil, fmt.Errorf("invalid workspace number: %w", err)
 		}
 		workspaces[n] = struct{}{}
 	}
-	var ws []int64
+	var ws []int
 	for n := range workspaces {
 		ws = append(ws, n)
 	}
