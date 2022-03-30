@@ -49,7 +49,10 @@ func TestWorkspacesFlagSet(t *testing.T) {
 
 	for _, test := range tests {
 		got := NewWorkspacesFlag()
-		got.Set(test.in)
+		if err := got.Set(test.in); err != nil {
+			t.Errorf("Set(%q) failed: %v\n", test.in, err)
+			continue
+		}
 		if diff := cmp.Diff(got, test.want); diff != "" {
 			t.Errorf("Set(%q) incorrect, diff (-got, +want):\n%s", test.in, diff)
 		}

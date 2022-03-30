@@ -40,9 +40,15 @@ func (f *WorkspacesFlag) String() string {
 }
 
 func (f *WorkspacesFlag) Set(value string) error {
+	if value == "" {
+		return nil
+	}
 	workspaces := make(map[int]struct{})
-	for _, field := range strings.Split(value, ",") {
-		n, err := strconv.Atoi(strings.TrimSpace(field))
+	fields := strings.FieldsFunc(value, func(r rune) bool {
+		return r == ' ' || r == ','
+	})
+	for _, field := range fields {
+		n, err := strconv.Atoi(field)
 		if err != nil {
 			return fmt.Errorf("invalid workspace number: %w", err)
 		}
