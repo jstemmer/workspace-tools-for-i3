@@ -30,6 +30,7 @@ import (
 
 var (
 	inputCmd = flag.String("input-cmd", "i3-input -F {i3cmd} -P {prompt}{prefix}", "Runs the given command to get user input. The following special strings will be replaced with their actual values: {prompt}, {prefix}, {i3cmd}. Falls back to i3-input if empty.")
+	sendToI3 = flag.Bool("x", false, "Send the rename workspace command to i3 after requesting input. Use this when the input-cmd does not rename the workspace.")
 )
 
 func main() {
@@ -52,10 +53,22 @@ func main() {
 	prompt := fmt.Sprintf("workspace name> ")
 	i3cmd := `rename workspace to "` + prefix + `%s"`
 
-	err = runInputCommand(*inputCmd, prompt, prefix, i3cmd)
+	input, err := runInputCommand(*inputCmd, prompt, prefix, i3cmd)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
+	}
+
+	if *sendToI3 {
+		if strings.TrimSpace(input) == "" {
+			return
+		}
+
+		newName := escapeName(input)
+		if _, err := i3.RunCommand(fmt.Sprintf(`rename workspace to "%s"`, newName)); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
 	}
 }
 
@@ -85,7 +98,7 @@ func getPrefix(name string) string {
 	return name
 }
 
-func runInputCommand(inputCmd, prompt, prefix, i3cmd string) error {
+func runInputCommand(inputCmd, prompt, prefix, i3cmd string) (string, error) {
 	cmd := inputCmd
 	var args []string
 	if c, a, ok := strings.Cut(inputCmd, " "); ok {
@@ -99,6 +112,13 @@ func runInputCommand(inputCmd, prompt, prefix, i3cmd string) error {
 		args[i] = strings.ReplaceAll(args[i], "{i3cmd}", i3cmd)
 	}
 	fmt.Printf("running: %s %s\n", cmd, strings.Join(args, " "))
-	err := exec.Command(cmd, args...).Run()
-	return err
+	out, err := exec.Command(cmd, args...).Output()
+	return strings.TrimSpace(string(out)), err
+}
+
+func escapeName(input string) string {
+	name := input
+	name = strings.ReplaceAll(name, `\`, `\\`)
+	name = strings.ReplaceAll(name, `"`, `\"`)
+	return name
 }
