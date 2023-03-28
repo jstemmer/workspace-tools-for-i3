@@ -18,6 +18,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,7 +28,17 @@ import (
 	"go.i3wm.org/i3/v4"
 )
 
+var (
+	inputCmd = flag.String("input-cmd", "i3-input -F {i3cmd} -P {prompt}{prefix}", "Runs the given command to get user input. The following special strings will be replaced with their actual values: {prompt}, {prefix}, {i3cmd}. Falls back to i3-input if empty.")
+)
+
 func main() {
+	flag.Parse()
+	if len(strings.TrimSpace(*inputCmd)) == 0 {
+		fmt.Fprintf(os.Stderr, "-input-cmd is a required flag\n")
+		os.Exit(1)
+	}
+
 	name, err := focusedWorkspaceName()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -38,13 +49,11 @@ func main() {
 	prefix := getPrefix(name)
 	fmt.Printf("prefix: %s\n", prefix)
 
-	i3cmd := fmt.Sprintf("rename workspace to \"%s%%s\"", prefix)
-	i3prompt := fmt.Sprintf("workspace name> %s", prefix)
+	prompt := fmt.Sprintf("workspace name> ")
+	i3cmd := `rename workspace to "` + prefix + `%s"`
 
-	cmd := exec.Command("i3-input", "-F", i3cmd, "-P", i3prompt)
-	fmt.Printf("running: %s\n", cmd)
-
-	if cmd.Run(); err != nil {
+	err = runInputCommand(*inputCmd, prompt, prefix, i3cmd)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
@@ -74,4 +83,22 @@ func getPrefix(name string) string {
 		return name + ":"
 	}
 	return name
+}
+
+func runInputCommand(inputCmd, prompt, prefix, i3cmd string) error {
+	cmd := inputCmd
+	var args []string
+	if c, a, ok := strings.Cut(inputCmd, " "); ok {
+		cmd = c
+		args = strings.Split(a, " ")
+	}
+
+	for i := range args {
+		args[i] = strings.ReplaceAll(args[i], "{prompt}", prompt)
+		args[i] = strings.ReplaceAll(args[i], "{prefix}", prefix)
+		args[i] = strings.ReplaceAll(args[i], "{i3cmd}", i3cmd)
+	}
+	fmt.Printf("running: %s %s\n", cmd, strings.Join(args, " "))
+	err := exec.Command(cmd, args...).Run()
+	return err
 }
